@@ -1,6 +1,21 @@
+/*
+	CopyRight @ 2014 by TimeChangePeople
+
+	This "PBD" is public
+	plugin and is illegal to sell or
+	edit it for money or other things
+	With this plugin you can force player
+	to plant bomb or will die !
+
+	PDB = Plant Bomb or Die !
+
+
+*/
+
 #include <amxmodx>
 #include <amxmisc>
 #include <fun>
+#include <fakemeta>
 
 // PBD = Plant Bomb or Die
 new const PLUGIN [] = "PBD";
@@ -26,13 +41,26 @@ public plugin_init()
 	register_logevent("logevent_function_s", 3, "2=Spawned_With_The_Bomb")
 	
 	//Block Drop c4 :
-	register_clcmd( "drop", "CmdDrop" );
+	register_clcmd( "drop", "CmdBlock" );
+
+	// Block Change team when u have c4 :
+	register_clcmd("chooseteam","CmdBlock");
+	register_clcmd("jointeam","CmdBlock");
+	register_clcmd("jointeam 1","CmdBlock");
+	register_clcmd("jointeam 2","CmdBlock");
+	register_clcmd("jointeam 3","CmdBlock");
+	register_clcmd("jointeam 4","CmdBlock");
+	register_clcmd("jointeam 5","CmdBlock");
+	register_clcmd("jointeam 6","CmdBlock");
 
 	// Planted the bomb :
 	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
 	
 	// Round start :
 	register_logevent("logevent_round_start", 2, "1=Round_Start") 
+
+	// Block Suicide:
+	register_forward(FM_ClientUserInfoChanged, "ClientUserInfoChanged") 
 	
 }
 
@@ -129,7 +157,26 @@ public OtherPlayer()
 	return 0;
 }
 
-public CmdDrop( const id )
+public ClientUserInfoChanged(id)
+{
+	static const name[] = "name"
+	static szOldName[32], szNewName[32]
+	pev(id, pev_netname, szOldName, charsmax(szOldName))
+	if( szOldName[0] )
+	{
+		get_user_info(id, name, szNewName, charsmax(szNewName))
+
+		if( !equal(szOldName, szNewName) )
+		{
+			set_user_info(id, name, szOldName)
+			return FMRES_HANDLED
+		}
+	}
+	return FMRES_IGNORED
+}
+
+
+public CmdBlock( const id )
 {
 	if(user_has_weapon(id, CSW_C4))
 		return 1;
