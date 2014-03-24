@@ -1,0 +1,114 @@
+#include <amxmodx>
+#include <amxmisc>
+#include <fun>
+
+// PBD = Plant Bomb or Die
+new const PLUGIN [] = "PBD";
+new const VERSION [] = "1.0";
+new const AUTHOR [] = "TimeChangePeople";
+
+new bool:planted;
+new plant_count[33];
+new plant_cvar;
+
+public plugin_init() 
+{
+	// Register plugin :
+	register_plugin(PLUGIN,VERSION,AUTHOR)
+
+	// New Round event :
+	register_event("HLTV", "event_new_round", "a", "1=0", "2=0") 
+
+	// Bomb Planted event :
+	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
+
+	// Event die:
+	register_event("DeathMsg","hk_die_msg","a")
+
+	// An cvar for count time:
+	plant_cvar = register_cvar("pbd_count","250")
+}
+
+public client_putinserver(id)
+{
+	planted = false;
+	plant_count[id] = 0;
+}
+public event_new_round()
+{
+	new Players[32]
+	new playerCount, i;
+	get_players(Players, playerCount, "a")
+	
+	for (i=0; i<playerCount; i++)
+	{
+		if(user_has_weapon(Players[i], CSW_C4))
+		{
+			set_task(1.0, "check_if_plant", Players[i]); 
+			planted = false;
+		}
+	}
+}
+
+public check_if_plant(id)
+{
+	if(planted)
+	{
+		remove_task(id);
+		return 1;
+	}
+
+	if(plant_count[id] >= get_pcvar_num(plant_cvar))
+	{
+		set_task(1.0, "OtherPlayer");
+		remove_task(id);
+		user_kill(id);
+		return 0;		
+	}
+
+	else
+	{
+		set_hudmessage(85, 255, 42, 0.03, 0.38, 0, 6.0, 1.0)
+		show_hudmessage(id, "Time to plant bomb : %i / %i",plant_count[id], get_pcvar_num(plant_cvar))
+		set_task(1.0, "check_if_plant", id)
+		return 0;		
+	}
+	return 0;
+}
+
+public logevent_function_p()
+	planted = true;
+
+public OtherPlayer()
+{
+	new iPlayers[ 32 ], iNum;
+	get_players( iPlayers, iNum, "c", "TERRORIST" );
+	
+	new iRandomPlayer = iPlayers[ random_num( 0, iNum -1 ) ];
+	
+	if( is_user_alive( iRandomPlayer ) )
+	{
+		give_item(iRandomPlayer, "weapon_c4");
+		set_task(1.0, "check_if_plant", iRandomPlayer);
+	}
+}
+
+public hk_die_msg()
+{
+	new victim = read_data( 2 );
+
+	if(planted)
+		return PLUGIN_HANDLED
+
+	if(user_has_weapon(victim, CSW_C4))
+	{
+		set_task(1.0, "OtherPlayer");
+		return PLUGIN_CONTINUE
+	}
+
+	else
+	{
+		return PLUGIN_CONTINUE
+	}
+	return PLUGIN_CONTINUE;
+}
