@@ -16,25 +16,34 @@ public plugin_init()
 	// Register plugin :
 	register_plugin(PLUGIN,VERSION,AUTHOR)
 
-	// New Round event :
-	register_event("HLTV", "event_new_round", "a", "1=0", "2=0") 
-
-	// Bomb Planted event :
-	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
-
 	// Event die:
 	register_event("DeathMsg","hk_die_msg","a")
 
 	// An cvar for count time:
 	plant_cvar = register_cvar("pbd_count","250")
+
+	// Pick Up Bomb :
+	register_logevent("logevent_function_s", 3, "2=Spawned_With_The_Bomb")
+	
+	//Block Drop c4 :
+	register_clcmd( "drop", "CmdDrop" );
+
+	// Planted the bomb :
+	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
+	
 }
 
 public client_putinserver(id)
-{
-	planted = false;
+{				
+	planted = false;	
 	plant_count[id] = 0;
 }
-public event_new_round()
+
+public logevent_function_s()
+	scan();
+
+
+public scan()
 {
 	new Players[32]
 	new playerCount, i;
@@ -44,21 +53,24 @@ public event_new_round()
 	{
 		if(user_has_weapon(Players[i], CSW_C4))
 		{
-			set_task(1.0, "check_if_plant", Players[i]); 
-			planted = false;
+			if(is_user_alive(Players[i]))
+			{
+				set_task(1.0, "check_if_plant", Players[i]); 
+				planted = false;
+				plant_count[Players[i]] = 0;
+			}
 		}
 	}
 }
-
 public check_if_plant(id)
 {
-	if(planted || !get_user_team(id) == 1)
+	if(planted || get_user_team(id) == 2 || !user_has_weapon(id, CSW_C4))
 	{
 		remove_task(id);
 		return 1;
 	}
 
-	if(plant_count[id] >= get_pcvar_num(plant_cvar))
+	if(plant_count[id] >= get_pcvar_num(plant_cvar) || !user_has_weapon(id, CSW_C4))
 	{
 		set_task(1.0, "OtherPlayer");
 		remove_task(id);
@@ -73,7 +85,7 @@ public check_if_plant(id)
 		show_hudmessage(id, "Time to plant bomb : %i / %i",plant_count[id], get_pcvar_num(plant_cvar))
 		set_task(1.0, "check_if_plant", id)
 		plant_count[id]++;
-		return 1;		
+		return 0;		
 	}
 	return 0;
 }
@@ -83,23 +95,39 @@ public logevent_function_p()
 
 public OtherPlayer()
 {
+
+	if(planted)
+	{
+		return 1;
+	}
+
 	new iPlayers[ 32 ], iNum;
 	get_players( iPlayers, iNum, "c", "TERRORIST" );
 	
 	new iRandomPlayer = iPlayers[ random_num( 0, iNum -1 ) ];
 	
-	if( is_user_alive( iRandomPlayer ) )
+	if( is_user_alive( iRandomPlayer ) && get_user_team(iPlayers[i]) == 1 )
 	{
 		give_item(iRandomPlayer, "weapon_c4");
 		set_task(1.0, "check_if_plant", iRandomPlayer);
+		return 0;
 	}
+	return 0;
+}
+
+public CmdDrop( const id )
+{
+	if(user_has_weapon(id, CSW_C4))
+		return 1;
+	return 0;
 }
 
 public hk_die_msg()
 {
+
 	new victim = read_data( 2 );
 
-	if(planted)
+	if(planted || get_user_team(victim) == 2)
 		return PLUGIN_HANDLED
 
 	if(user_has_weapon(victim, CSW_C4))
