@@ -52,7 +52,7 @@ public event_new_round()
 
 public check_if_plant(id)
 {
-	if(planted)
+	if(planted || !get_user_team(id) == 1)
 	{
 		remove_task(id);
 		return 1;
@@ -62,8 +62,9 @@ public check_if_plant(id)
 	{
 		set_task(1.0, "OtherPlayer");
 		remove_task(id);
+		plant_count[id] = 0;
 		user_kill(id);
-		return 0;		
+		return 1;		
 	}
 
 	else
@@ -71,7 +72,8 @@ public check_if_plant(id)
 		set_hudmessage(85, 255, 42, 0.03, 0.38, 0, 6.0, 1.0)
 		show_hudmessage(id, "Time to plant bomb : %i / %i",plant_count[id], get_pcvar_num(plant_cvar))
 		set_task(1.0, "check_if_plant", id)
-		return 0;		
+		plant_count[id]++;
+		return 1;		
 	}
 	return 0;
 }
