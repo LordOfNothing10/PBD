@@ -60,7 +60,7 @@ public plugin_init()
 	register_logevent("logevent_round_start", 2, "1=Round_Start") 
 
 	// Block Suicide:
-	register_forward(FM_ClientUserInfoChanged, "ClientUserInfoChanged") 
+	register_forward(FM_ClientKill, "Forward_ClientKill")
 	
 }
 
@@ -157,22 +157,12 @@ public OtherPlayer()
 	return 0;
 }
 
-public ClientUserInfoChanged(id)
+public Forward_ClientKill(id)
 {
-	static const name[] = "name"
-	static szOldName[32], szNewName[32]
-	pev(id, pev_netname, szOldName, charsmax(szOldName))
-	if( szOldName[0] )
-	{
-		get_user_info(id, name, szNewName, charsmax(szNewName))
-
-		if( !equal(szOldName, szNewName) )
-		{
-			set_user_info(id, name, szOldName)
-			return FMRES_HANDLED
-		}
-	}
+	if(is_user_alive(id))
+		return FMRES_SUPERCEDE
 	return FMRES_IGNORED
+
 }
 
 
