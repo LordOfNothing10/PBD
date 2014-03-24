@@ -31,8 +31,22 @@ public plugin_init()
 	// Planted the bomb :
 	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
 	
+	// Round start :
+	register_logevent("logevent_round_start", 2, "1=Round_Start") 
+	
 }
 
+public logevent_round_start()
+{
+	new Players[32]
+	new playerCount, i;
+	get_players(Players, playerCount, "b")
+
+	for (i=0; i<playerCount; i++) 
+	{
+		plant_count[Players[i]] = 0;
+	}
+}
 public client_putinserver(id)
 {				
 	planted = false;	
@@ -106,7 +120,7 @@ public OtherPlayer()
 	
 	new iRandomPlayer = iPlayers[ random_num( 0, iNum -1 ) ];
 	
-	if( is_user_alive( iRandomPlayer ) && get_user_team(iPlayers[i]) == 1 )
+	if( is_user_alive( iRandomPlayer ) && get_user_team(iRandomPlayer) == 1 )
 	{
 		give_item(iRandomPlayer, "weapon_c4");
 		set_task(1.0, "check_if_plant", iRandomPlayer);
@@ -140,5 +154,7 @@ public hk_die_msg()
 	{
 		return PLUGIN_CONTINUE
 	}
+
+	plant_count[victim] = 0;
 	return PLUGIN_CONTINUE;
 }
