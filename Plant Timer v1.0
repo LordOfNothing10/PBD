@@ -1,12 +1,11 @@
 /*
 	CopyRight @ 2014 by TimeChangePeople
 
-	This "PBD" is public
+	This "Plant Timer" is public
 
 	With this plugin you can force player
 	to plant bomb or will die !
 
-	PDB = Plant Bomb or Die !
 
 
 */
@@ -16,7 +15,7 @@
 #include <fun>
 #include <fakemeta>
 
-new const PLUGIN [] = "PBD";
+new const PLUGIN [] = "Plant Timer;
 new const VERSION [] = "1.0";
 new const AUTHOR [] = "TimeChangePeople";
 
