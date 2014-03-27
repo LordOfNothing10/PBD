@@ -1,0 +1,248 @@
+/*
+	CopyRight @ 2014 by TimeChangePeople
+
+	This "Plant Timer" is public
+
+	With this plugin you can force player
+	to plant bomb or will die !
+
+
+	Credite :
+			LordOfNothing
+
+	ChangeLog :
+
+		1.0 
+			Prima lansare
+		1.1
+			Schimbare count
+			Adaugare ML
+			Added Round End , EVENT 
+			Reparare bug TASK
+
+
+
+*/
+
+#include <amxmodx>
+#include <amxmisc>
+#include <fun>
+#include <fakemeta>
+
+new const PLUGIN [] = "Plant Timer";
+new const VERSION [] = "1.1";
+new const AUTHOR [] = "LordOfNothing";
+
+new bool:planted;
+new plant_count[33];
+new plant_cvar;
+new bool:task;
+
+public plugin_init() 
+{
+	// Register plugin :
+	register_plugin(PLUGIN,VERSION,AUTHOR)
+
+	// Event die:
+	register_logevent("hk_die_msg", 3, "2=Dropped_The_Bomb")
+
+	// An cvar for count time:
+	plant_cvar = register_cvar("plant_count","250")
+
+	// Pick Up Bomb :
+	register_logevent("logevent_function_s", 3, "2=Spawned_With_The_Bomb")
+	
+	//Block Drop c4 :
+	register_clcmd( "drop", "CmdBlock" );
+
+	// Block Change team when u have c4 :
+	register_clcmd("chooseteam","CmdBlock");
+	register_clcmd("jointeam","CmdBlock");
+	register_clcmd("jointeam 1","CmdBlock");
+	register_clcmd("jointeam 2","CmdBlock");
+	register_clcmd("jointeam 3","CmdBlock");
+	register_clcmd("jointeam 4","CmdBlock");
+	register_clcmd("jointeam 5","CmdBlock");
+	register_clcmd("jointeam 6","CmdBlock");
+
+	// Planted the bomb :
+	register_logevent("logevent_function_p", 3, "2=Planted_The_Bomb")
+
+	// Pick Up Bomb :
+	register_logevent("logevent_function_e", 3, "2=Got_The_Bomb")
+	
+	// Round start :
+	register_logevent("logevent_round_start", 2, "1=Round_Start") 
+
+	// Block Suicide:
+	register_forward(FM_ClientKill, "Forward_ClientKill")
+
+	// Round end:
+	register_logevent("logevent_round_end", 2, "1=Round_End") 
+	
+	// Multi Language:
+	register_dictionary("plant_timer.txt");
+	
+}
+
+public logevent_round_start()
+{
+	if(!task)
+		set_task(1.75, "scan");
+}
+
+public client_putinserver(id)					
+	plant_count[id] = get_pcvar_num(plant_cvar);
+
+
+public logevent_round_end()
+{
+	new Players[32]
+	new playerCount, i;
+	get_players(Players, playerCount, "a")
+	
+	for (i=0; i<playerCount; i++)
+	{
+		if(is_user_alive(Players[i]))
+		{
+			remove_task(Players[i]);
+			plant_count[Players[i]] = get_pcvar_num(plant_cvar);
+		}
+	}
+}
+
+public logevent_function_s()
+{
+	if(!task)
+		set_task(1.75, "scan");
+}
+
+
+public logevent_function_e()
+{
+	if(!task)
+		set_task(1.75, "scan");
+}
+
+
+
+public scan()
+{
+	new Players[32]
+	new playerCount, i;
+	get_players(Players, playerCount, "a")
+	
+	for (i=0; i<playerCount; i++)
+	{
+		if(user_has_weapon(Players[i], CSW_C4))
+		{
+			if(is_user_alive(Players[i]))
+			{
+				set_task(1.0, "check_if_plant", Players[i]); 
+				planted = false;
+				task = true;
+				plant_count[Players[i]] = get_pcvar_num(plant_cvar);
+			}
+		}
+	}
+}
+public check_if_plant(id)
+{
+	new szName[33];
+	get_user_name(id, szName, charsmax(szName) - 1);
+
+	if(planted || get_user_team(id) == 2 || !user_has_weapon(id, CSW_C4))
+	{
+		remove_task(id);
+		return 1;
+	}
+
+	if(!plant_count[id])
+	{
+		set_task(1.0, "OtherPlayer");
+		remove_task(id);
+		plant_count[id] = get_pcvar_num(plant_cvar);
+		user_kill(id);
+		client_print(0, print_chat, "%L",id,"KILLED",szName);
+		return 1;		
+	}
+
+	else
+	{
+		set_hudmessage(85, 255, 42, 0.03, 0.38, 0, 6.0, 1.0)
+		show_hudmessage(id, "%L",id,"PLANT",plant_count[id])
+		set_task(1.0, "check_if_plant", id)
+		plant_count[id]--;
+		return 0;		
+	}
+	return 0;
+}
+
+public logevent_function_p()
+{
+	planted = true;
+	task = false;
+}
+
+public OtherPlayer()
+{
+
+	if(planted)
+	{
+		return 1;
+	}
+
+	new iPlayers[ 32 ], iNum;
+	get_players( iPlayers, iNum, "c", "TERRORIST" );
+	
+	new iRandomPlayer = iPlayers[ random_num( 0, iNum -1 ) ];
+	
+	if( is_user_alive( iRandomPlayer ) && get_user_team(iRandomPlayer) == 1 )
+	{
+		give_item(iRandomPlayer, "weapon_c4");
+		set_task(1.0, "check_if_plant", iRandomPlayer);
+		return 0;
+	}
+	return 0;
+}
+
+public Forward_ClientKill(id)
+{
+	if(is_user_alive(id))
+		return FMRES_SUPERCEDE
+	return FMRES_IGNORED
+
+}
+
+
+public CmdBlock( const id )
+{
+	if(user_has_weapon(id, CSW_C4))
+		return 1;
+	return 0;
+}
+
+public hk_die_msg()
+{
+	if(planted)
+		return PLUGIN_HANDLED;
+
+	new id = get_loguser_index();
+	
+	if(is_user_alive(id))
+	{
+		remove_task(id);
+		plant_count[id] = get_pcvar_num(plant_cvar);
+		task = false;
+		return PLUGIN_HANDLED;
+	}	
+	return PLUGIN_CONTINUE;
+}
+
+stock get_loguser_index() {
+	new loguser[80], name[32]
+	read_logargv(0, loguser, 79)
+	parse_loguser(loguser, name, 31)
+ 
+	return get_user_index(name)
+}
