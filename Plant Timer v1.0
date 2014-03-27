@@ -1,5 +1,5 @@
 /*
-	CopyRight @ 2014 by TimeChangePeople
+	CopyRight @ 2014 by LordOfNothing
 
 	This "Plant Timer" is public
 
@@ -17,7 +17,7 @@
 
 new const PLUGIN [] = "Plant Timer;
 new const VERSION [] = "1.0";
-new const AUTHOR [] = "TimeChangePeople";
+new const AUTHOR [] = "LordOfNothing";
 
 new bool:planted;
 new plant_count[33];
